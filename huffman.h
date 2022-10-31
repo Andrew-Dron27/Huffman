@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <queue>
+#include <unordered_map>
 #include "Node.h"
 using namespace std;
 
@@ -12,7 +13,7 @@ class Huffman
     Node* constructTree();
     void encodeTree();
     Node* root;
-    priority_queue<Node*, vector<Node*>, NodeCompare> heap;
+    priority_queue<Node*, vector<Node*>, NodeCompare>* heap;
 
     void compress_data(ifstream& inFile, unordered_map<string, Node*> symbols, vector<string> ordered_list_of_symbols );
 
@@ -45,8 +46,10 @@ class Huffman
     int wordCount;
 
     Huffman();
+    Huffman(const Huffman& other);
+    Huffman& operator=(Huffman other);
     ~Huffman();
-    void compress(ifstream& inFile);
+    void compress(ifstream& inFile, ofstream& outFile);
     void decompress(string filePath, string outFile);
 };
 

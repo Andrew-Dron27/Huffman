@@ -3,7 +3,7 @@
 #define NODE_H
 using namespace std;
 
-struct Node {
+class Node {
  
     public:
     // One of the input characters
@@ -48,7 +48,7 @@ struct Node {
 };
 
 class NodeCompare {
-public:
+    public:
     bool operator()(const Node& o1, const Node& o2)
     {
         return o1.frequency < o2.frequency;
