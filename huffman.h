@@ -10,40 +10,46 @@ using namespace std;
 class Huffman
 {
     private:
+
+    vector<unsigned char> Huffman::readFile(ifstream& inFile);
+
     Node* constructTree();
+
     void encodeTree();
+
     Node* root;
     priority_queue<Node*, vector<Node*>, NodeCompare>* heap;
 
-    void compress_data(ifstream& inFile, unordered_map<string, Node*> symbols, vector<string> ordered_list_of_symbols );
+    void compressData(ofstream& outFile, unordered_map<string, Node*> symbols, vector<string>* symbolList );
 
-    void decompress_data( Node* huffman_root, vector<char> bits, ifstream& inFile);
+    void decompressData( Node* root, vector<char> bits, ifstream& inFile);
 
-    unordered_map<string, Node*> readFileHeader (vector<unsigned char> file_bytes);
+    unordered_map<string, Node*> readFileHeader (vector<unsigned char> fileBytes);
 
     vector<char> read_file(ifstream& inFile);
 
-    unordered_map<string, Node*> computeMostCommonWords( vector<unsigned char> buffer, int count );
-    unordered_map<string, Node*> 
+    unordered_map<string, Node*>* computeMostCommonWords( vector<unsigned char> buffer, int count );
 
-	computeRemainingSymbols( vector<char> buffer, 
-	                                            unordered_map<string, Node*> word_symbols,
-	                                            vector<string> ordered_list_of_symbols);
+    unordered_map<string, Node*>*
+	computeRemainingSymbols( vector<unsigned char> buffer, 
+	                                            unordered_map<string, Node*>* wordSymbols,
+	                                            vector<string> *symbolList);
 
-    vector<string> convertBitstreamToSymbol( vector<unsigned char> bit_stream, Node* root );
+    vector<string> convertBitstreamToSymbol( vector<unsigned char> bitStream, Node* root );
 
-    unsigned char* buildFileHeader( vector<Node*> huffman_nodes );
+    unsigned char* buildFileHeader( unordered_map<string, Node*> *symbols);
 
-    void writeData( ofstream& outfile, vector<string> symbol_list );
-    unsigned char* buildCompressedBitStream( vector<string> ordered_list_of_symbols, unordered_map<string, Node*> table );
+    void writeData( ofstream& outfile, vector<string> symbolList );
 
-    Node* create_tree( vector<Node*> nodes );
+    unsigned char* buildCompressedBitStream( vector<string> *symbolList, unordered_map<string, Node*> *table );
+
+    Node* createTree( unordered_map<string, Node*> *symbolMap);
     
     static vector<int> determineBitPatternSymbol( Node* leaf );
 
     public:
-    const string eof = "EOF";
-    int wordCount;
+    string eof = "EOF";
+    int wordCount = 500;
 
     Huffman();
     Huffman(const Huffman& other);

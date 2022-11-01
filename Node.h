@@ -1,4 +1,3 @@
-
 #ifndef NODE_H
 #define NODE_H
 using namespace std;
@@ -36,7 +35,7 @@ class Node {
         this->frequency = frequency;
     }
 
-    Node(string symbol, int frequency, Node* _right, Node* _left)
+    Node(string symbol, Node* _right, Node* _left)
     {
  
         left = right = nullptr;

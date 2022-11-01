@@ -1,6 +1,7 @@
 #include "huffman.h"
 #include "ctype.h"
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 Huffman::Huffman()
@@ -13,73 +14,179 @@ Huffman::~Huffman()
     delete heap;
 }
 
-// Huffman::computeMostCommonWords( vector<unsigned char> buffer, int count )
-// {
-//     unordered_map<string, Node*> frequency = new unordered_map<string, Node*>();
-//     string word = "";
-
-//     for(int i = 0; i < buffer.size(); i++)
-//     {
-//         if(isalpha(buffer[i]))
-//         {
-//             word += buffer[i];
-//         }
-//     }
-// }
-
-// void printCodes(Node* root, string str)
-// {
- 
-//     if (!root)
-//         return;
- 
-//     if (root->symbol != '$')
-//         cout << root->symbol << ": " << str << "\n";
- 
-//     printCodes(root->left, str + "0");
-//     printCodes(root->right, str + "1");
-// }
-
-Node* Huffman::constructTree()
-{
-    // unordered_map<char, int>::iterator it = freq.begin();
-
-    // while(it != freq.end())
-    // {
-    //     Node* node = new Node(it->first, it->second);
-    //     heap->push(node);
-    //     it++;
-    // }
-
-    // Node *left, *right;
-
-    // while(heap->size() != 1)
-    // {
-    //     left = heap->top();
-    //     heap->pop();
-
-    //     right = heap->top();
-    //     heap->pop();
-
-    //     heap->push(new Node('\0',left->frequency + right->frequency, right, left))
-    // }
-
-    // return heap->top();
-    return nullptr;
-}
-
 void Huffman::compress(ifstream& inFile, ofstream& outFile)
 {
-    // unordered_map<char, int> freq;
-    // char ch;
-    // while (inFile >> noskipws >> ch) 
-    // {
-    //     if(freq.count(ch))//this is super slow
-    //     {
-    //         freq[ch] = 0;
-    //     }
-    //     freq[ch]++;
-    // }
-    // Node* top = constructTree(unordered_map<char, int> freq);
-    // printCodes(heap->top(), "");
+    vector<string>* orderedSymbols = new vector<string>();
+
+    vector<unsigned char> buffer = readFile(inFile);
+
+    unordered_map<string, Node*>* mostCommonWords = computeMostCommonWords(buffer, wordCount);
+
+    unordered_map<string, Node*>* symbolMap = computeRemainingSymbols(buffer, mostCommonWords, orderedSymbols);
+
+    // Makes the huffman tree from the ordered symbols
+    createTree(symbolMap);
+
+    // Compresses the data and outputs the compressed data into a binary file
+    compressData( outFile, all_symbols, orderedSymbols );
+
+    delete orderedSymbols;
+    delete symbolMap;
+}
+
+vector<unsigned char> Huffman::readFile(ifstream& inFile)
+{
+    unsigned char ch;
+    vector<unsigned char> characters;
+    while(inFile >> noskipws >> ch)
+    {
+        characters.push_back(ch);
+    }
+    return characters;
+}
+
+bool cmp(const Node &a, const Node &b)
+{
+    //sort in descending order
+    return a.frequency > b.frequency;
+}
+
+void increment(unordered_map<string, Node*>* symbols, string symbol)
+{
+    if(symbols->count(symbol) == 1)
+    {
+        symbols->at(symbol)->frequency++;
+    }
+    else
+    {
+        (*symbols)[symbol] = new Node(symbol,1);
+    }
+}
+
+unordered_map<string, Node*>* Huffman::computeMostCommonWords( vector<unsigned char> buffer, int count )
+{   
+    //count how many times each 'word' appears in the file
+    unordered_map<string, Node*> *wordsMap = new unordered_map<string, Node*>();
+    string word = "";
+
+    if(wordCount >= 1)
+    {
+        for(int i = 0; i < buffer.size(); i++)
+        {
+            if(isalpha(buffer[i]))
+            {
+                word += buffer[i];
+            }
+            else {
+                increment(wordsMap, word);
+            }
+        }
+    }
+
+    vector<std::pair<string, Node*>> elems(wordsMap->begin(), wordsMap->end());
+    sort(elems.begin(), elems.end(), cmp);
+
+    wordsMap->clear();
+
+    for(int i = 0; i < wordCount; i++)
+    {
+        (*wordsMap)[elems[i].first] = elems[i].second;
+    }
+    
+    return wordsMap;
+
+}
+
+unordered_map<string, Node*>* Huffman::computeRemainingSymbols( vector<unsigned char> buffer, 
+	                                            unordered_map<string, Node*> *wordSymbols,
+	                                            vector<string>* symbolList)
+{
+
+    //unordered_map<string, Node*>* allSymbols = new unordered_map<string, Node*>();
+    string symbol = "";
+    for(int i = 0; i < buffer.size(); i++)
+    {
+        if(isalpha(buffer[i]))
+        {
+            symbol += buffer[i];
+        }
+        else {
+            if(symbol.length() > 0)
+            {
+                //check if already a top word
+                if(wordSymbols->count(symbol) != 1)
+                {
+                    //add indiviudal chars to map
+                    for(char c : symbol)
+                    {
+                        increment(wordSymbols, "" + c);
+                        symbolList->push_back("" + c);
+                    }
+                }
+                else
+                {
+                    symbolList->push_back(symbol);
+                }
+                
+            }
+            symbol = "";
+        }
+    }
+
+    (*wordSymbols)[eof] = new Node(eof,1);
+    symbolList->push_back(eof);
+    return wordSymbols;
+}
+
+Node* Huffman::createTree(unordered_map<string, Node*> *symbolMap)
+{
+    
+    unordered_map<string, Node*>::iterator it = symbolMap->begin();
+
+    while(it != symbolMap->end())
+    {
+        heap->push(it->second);
+        it++;
+    }
+
+    Node *left, *right;
+
+    int nodeId = 1;
+
+    while(heap->size() > 1)
+    {
+        left = heap->top();
+        heap->pop();
+
+        right = heap->top();
+        heap->pop();
+
+        heap->push(new Node("NODE_" + nodeId, left, right));
+    }
+
+    return heap->top();
+}
+
+void Huffman::compressData(ofstream& outFile, unordered_map<string, Node*> *symbols, vector<string>* symbolList )
+{
+    try
+    {
+        unsigned char* fileHeader = buildFileHeader(symbols);
+        unsigned char* bitStream = buildCompressedBitStream(symbolList, symbols);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
+}
+
+unsigned char* Huffman::buildFileHeader( unordered_map<string, Node*> *huffmanNodes )
+{
+
+}
+
+unsigned char* buildCompressedBitStream( vector<string> *symbolList, unordered_map<string, Node*> *table )
+{
+
 }
