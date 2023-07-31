@@ -12,7 +12,7 @@ class Node {
     int frequency;
  
     // Left and right child of this node
-    struct Node *left, *right;
+    struct Node *left, *right, *parent;
 
     bool isleaf()
     {
@@ -43,6 +43,8 @@ class Node {
         this->frequency = frequency;
         this->right = _right;
         this->left = _left;
+        left->parent = this;
+        right->parent = this;
     }
 };
 

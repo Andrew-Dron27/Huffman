@@ -2,6 +2,8 @@
 #include "ctype.h"
 #include <iostream>
 #include <algorithm>
+#include <bitset>
+#include <memory>
 
 using namespace std;
 Huffman::Huffman()
@@ -94,14 +96,12 @@ unordered_map<string, Node*>* Huffman::computeMostCommonWords( vector<unsigned c
     }
     
     return wordsMap;
-
 }
 
 unordered_map<string, Node*>* Huffman::computeRemainingSymbols( vector<unsigned char> buffer, 
 	                                            unordered_map<string, Node*> *wordSymbols,
 	                                            vector<string>* symbolList)
 {
-
     //unordered_map<string, Node*>* allSymbols = new unordered_map<string, Node*>();
     string symbol = "";
     for(int i = 0; i < buffer.size(); i++)
@@ -171,8 +171,8 @@ void Huffman::compressData(ofstream& outFile, unordered_map<string, Node*> *symb
 {
     try
     {
-        unsigned char* fileHeader = buildFileHeader(symbols);
-        unsigned char* bitStream = buildCompressedBitStream(symbolList, symbols);
+        unique_ptr<vector<bool>>  fileHeader = buildFileHeader(symbols);
+        unique_ptr<vector<bool>>  bitStream = buildCompressedBitStream(symbolList, symbols);
     }
     catch(const std::exception& e)
     {
@@ -181,12 +181,60 @@ void Huffman::compressData(ofstream& outFile, unordered_map<string, Node*> *symb
     
 }
 
-unsigned char* Huffman::buildFileHeader( unordered_map<string, Node*> *huffmanNodes )
+unique_ptr<vector<bool>>  Huffman::buildFileHeader( unordered_map<string, Node*> *huffmanNodes )
 {
+    unordered_map<string, Node*>::iterator it = huffmanNodes->begin();
+    Node* currNode;
+    vector<bool> lengthBytes, charBytes, freqBytes;
+    while(it != huffmanNodes->end())
+    {
+        currNode = it->second;
 
+        lengthBytes = Bit_Operations.convert_integer_to_bytes(currNode->symbol.size());
+			
+        for(char character : currNode->symbol)
+        {
+            out.write(character);
+        }
+
+        out.write(Bit_Operations.convert_integer_to_bytes(currNode->freq));
+        
+        it++;
+    }
 }
 
-unsigned char* buildCompressedBitStream( vector<string> *symbolList, unordered_map<string, Node*> *table )
+unique_ptr<vector<bool>> buildCompressedBitStream( vector<string> *symbolList, unordered_map<string, Node*> *table )
 {
+    string word;
+    Node* node;
+    vector<bool> bitPattern;
+    unique_ptr<vector<bool>> bitStream(new vector<bool>());
 
+    for(string symbol : *symbolList)
+    {
+        node = (*table)[symbol];
+        bitPattern = getSymbolBitPattern(node);
+        bitStream->insert(bitStream->end(), bitPattern.begin(), bitPattern.end());
+    }
+
+    return bitStream;
+}
+
+vector<bool> getSymbolBitPattern( Node* leaf )
+{
+    vector<bool> bitPattern;
+    while(leaf->parent != nullptr)
+    {
+			// Left we add zero
+			if(leaf->parent->left == leaf)
+				bitPattern.push_back(0);
+			// Right we add 1
+			else
+				bitPattern.push_back(1);
+			// Moving up
+			leaf = leaf->parent;
+		}
+		// The linkedlist of pattern
+		return bitPattern;
+    }
 }
