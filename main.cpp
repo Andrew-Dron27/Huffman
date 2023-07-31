@@ -18,11 +18,22 @@ int main(int argc, char** argv)
         exit(1);
     }
     string fileName = std::filesystem::current_path().string() + "/Test_Files/" +  argv[1];
-    ifstream inFile;
-    inFile.open(fileName);
+    string outFileName = "";
+    ifstream inFile(fileName);
+    ofstream outFile(outFileName);
+
     if (!inFile)
     {
         cerr << "Unable to open file textfile";
         exit(1);   // call system to stop
     }
+
+    Huffman* huff_and_puff = new Huffman();
+
+    huff_and_puff->compress(inFile, outFile);
+
+    delete huff_and_puff;
+    
+    outFile.close();
+    inFile.close();
 }
